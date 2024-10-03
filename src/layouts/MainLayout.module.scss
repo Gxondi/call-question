@@ -1,0 +1,19 @@
+.header{
+    padding: 0 24px;
+    background-image: linear-gradient(to right, #eea2a2 0%, #bbc1bf 19%, #57c6e1 42%, #b49fda 79%, #7ac5d8 100%);
+    .left{
+        float: left;
+    }
+    .right{
+        float: right;
+    }
+}
+.main{
+    min-height: calc(100vh - 64px  - 65px);
+    background-image: linear-gradient(to right, #eea2a2 0%, #bbc1bf 19%, #57c6e1 42%, #b49fda 79%, #7ac5d8 100%);
+}
+.footer{
+    text-align: center;
+    background-color: #f7f7f7;
+    border-top: 1px solid #e8e8e8;
+}
