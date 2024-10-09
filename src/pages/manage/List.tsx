@@ -1,16 +1,95 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useEffect, useState, useRef } from 'react';
 import styles from './Common.module.scss';
-import { Typography } from 'antd';
+import { Spin, Typography } from 'antd';
 import QuestionCard from '../../components/QuestionCard';
 import Search from '../../components/ListSearch';
-const rawQuestions = [
-  { _id: 'q1', title: '问卷1', isPublished: true, isStar: true, answerCount: 5, created: new Date() },
-  { _id: 'q2', title: '问卷2', isPublished: false, isStar: false, answerCount: 5, created: new Date() },
-  { _id: 'q3', title: '问卷3', isPublished: false, isStar: false, answerCount: 5, created: new Date() }
-];
+import { useTitle, useDebounceFn, useRequest } from 'ahooks';
+import { useSearchParams } from 'react-router-dom';
+import { getAllQuestionService } from '../../services/question';
+import { LIST_PAGE_SIZE, LIST_SEARCH_PARMA_KEYWORD } from '../../constants/index';
+
 const { Title } = Typography;
 const List: FC = () => {
-  const [questions, setQuestions] = useState(rawQuestions);
+  // const [list, setList] = useState([]);
+
+  // const [total, setTotal] = useState(0);
+  // useEffect(() => {
+
+  //   // 获取数据
+  //   async function load() {
+  //     const data = await getAllQuestionService();
+  //     const { list = [], total = 0 } = data;
+  //     setList(list);
+  //     setTotal(total);
+  //   }
+  //   load();
+  // }, []);
+  useTitle('我的问卷');
+  const [list, setList] = useState([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const haveMoreData = total > list.length;
+  const [searchParams] = useSearchParams();
+  const keyword = searchParams.get(LIST_SEARCH_PARMA_KEYWORD) || '';
+  useEffect(() => {
+    setPage(1);
+    setList([]);
+    setTotal(0);
+  }, [keyword]);
+  //真正加载数据
+  const { run: load, loading } = useRequest(async () => {
+    const data = await getAllQuestionService({ page, pageSize: LIST_PAGE_SIZE, keyword: keyword});
+    return data;
+  }, {
+    manual: true, //默认不自动加载
+    onSuccess: (data) => {
+      const { list: newList = [], total = 0 } = data;
+      setList(list.concat(newList));
+      setTotal(total);
+      setPage(page + 1);
+    }
+  });
+  //loadData 尝试触发加载数据--防抖
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { run: loadData } = useDebounceFn(() => {
+    const elme = containerRef.current;
+    if (elme == null) return;
+    const domRect = elme.getBoundingClientRect();
+    if (domRect == null) return;
+    const { bottom } = domRect;
+    if (bottom <= document.body.clientHeight) {
+      load();//加载数据
+    };
+
+  }, {
+    wait: 1000,
+  }
+  )
+  useEffect(() => {
+    loadData();
+  }, [searchParams]);
+  useEffect(() => {
+    if (haveMoreData) {
+      window.addEventListener('scroll', loadData) //防抖
+
+    }
+    return () => {
+      window.removeEventListener('scroll', loadData)
+    }
+  }, [searchParams,haveMoreData]);
+
+  function LoadMoreContentElement() {
+    if(!haveMoreData){
+      return <Spin>没有更多数据了</Spin>
+    }
+    if(total === 0){
+      return <Spin>没有更多数据了...</Spin>
+    }
+    if(loading){
+      return <Spin>加载中...</Spin>
+    }
+    return <Spin>加载中...</Spin>
+  }
   return (
     <>
       <div className={styles.header}>
@@ -20,18 +99,21 @@ const List: FC = () => {
         </div>
         {/* 右边 */}
         <div className={styles.right}>
-            <Search/>
+          <Search />
         </div>
       </div>
-
       <div className={styles.content}>
-        {questions.length > 0 &&
-          questions.map(q => {
-            const { _id } = q;
-            return <QuestionCard key={_id} {...q} />
+        {(list.length > 0) &&
+          list.map((item: any) => {
+            const { _id } = item;
+            return <QuestionCard key={_id} {...item} />
           })}
       </div>
-      <div className={styles.footer}>上划加载更多</div>
+      <div className={styles.footer}>
+        <div ref={containerRef}>
+          {LoadMoreContentElement()}
+           </div>
+      </div>
     </>
   );
 }

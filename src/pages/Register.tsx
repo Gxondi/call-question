@@ -1,15 +1,34 @@
 import React, { FC } from 'react';
-import { Button, Form, Input, Typography, Space } from 'antd';
-import { Link } from 'react-router-dom';
+import { Button, Form, Input, Typography, Space, message } from 'antd';
+import { Link , useNavigate} from 'react-router-dom';
 import styles from './Home.module.scss';
 import { LOGIN_PATHNAME } from '../router/Index';
 import { UserAddOutlined } from '@ant-design/icons';
+import { registerService } from '../services/user';
+import { useRequest } from 'ahooks';
 const { Title } = Typography;
 const Register: FC = () => {
+    const nav = useNavigate();
+
+    const { run } = useRequest(async (values)=>{
+        const { username, password, nickname } = values;
+        await registerService(username, password, nickname);
+    },{
+        manual:true,
+        onSuccess:()=>{
+            message.success('注册成功')
+            nav(
+                {
+                    pathname: LOGIN_PATHNAME 
+                }
+            )
+        }
+    });
 
     const onFinish = (values: any)=>{
-        console.log(values)
+        run(values)
     }
+
     return (
         <div className={styles.container}>
             <div>
@@ -23,7 +42,7 @@ const Register: FC = () => {
                 </Space>
             </div>
             <div>
-                <Form labelCol={{ span: 8 }} wrapperCol={{ span: 18 }} onFinish={onFinish}>
+                <Form labelCol={{ span: 8 }} wrapperCol={{ span: 18 }} onFinish={onFinish} >
                     <Form.Item
                         label="用户名"
                         name="username"

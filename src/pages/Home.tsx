@@ -1,12 +1,19 @@
-import React, { FC } from 'react';
+import React, { FC, useEffect } from 'react';
 import { Button, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { MANAGE_LIST_PATHNAME } from '../router/Index';
+import '../_mock/index';
+import axios from 'axios';
 import styles from './Home.module.scss';
 const { Title, Paragraph } = Typography;
 
 const Home: FC = () => {
     const nav = useNavigate();
+    useEffect(()=>{
+        axios.get('/api/test').then(res=>{
+            console.log(res)
+        })
+    })
     return (
         <div className={styles.container}>
             <div className={styles.info}>

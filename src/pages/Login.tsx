@@ -1,13 +1,18 @@
 import React, { FC ,useEffect} from 'react';
-import { Button, Form, Input, Checkbox, Typography, Space } from 'antd';
+import { Button, Form, Input, Checkbox, Typography, Space, message } from 'antd';
 import { UserAddOutlined } from '@ant-design/icons';
-import { Link } from 'react-router-dom';
+import { Link ,useNavigate } from 'react-router-dom';
 import { REGISTER_PATHNAME } from '../router/Index';
 import styles from './Login.module.scss';
+import { loginService } from '../services/user';
+import { useRequest } from 'ahooks';
+import { MANAGE_LIST_PATHNAME } from '../router/Index';
+import { setToken } from '../utils/userToken';
 const { Title } = Typography;
 
 const USERNAME_KEY = 'username'
 const PASSWORD_KEY = 'password'
+
 const Login: FC = () => {
     const [form] = Form.useForm();
     //记住用户名
@@ -31,8 +36,28 @@ const Login: FC = () => {
         //设置表单的值
         form.setFieldsValue({ username, password })
     },)
+    const nav = useNavigate();
+    const { run } = useRequest(async (values) => {
+        const { username, password } = values;
+        const data = await loginService(username, password);
+        return data
+    }, {
+        manual: true,
+        onSuccess: (result) => {
+            const { token = '' } = result
+            //设置token
+            setToken(token)
+            message.success('登录成功')
+            nav(
+                {
+                    pathname: MANAGE_LIST_PATHNAME
+                }
+            )
+        }
+    });
     const onFinish = (values: any) => {
         const {username,password,remember} = values || {}
+        run(values)
         if (remember) {
             rememberUsername(username,password)
         } else {
